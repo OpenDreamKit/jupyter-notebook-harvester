@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# Download all notebooks from github that contain
+
+import io
+import os.path
+import sys
+import textwrap
+from github import Github
+
+
+# Get the authentication token
+
+if "TOKEN" not in os.environ:
+    print(textwrap.dedent("""
+    Usage:
+
+        TOKEN=<token> download-sagemath-notebooks
+
+    where <token> was obtained from https://github.com/settings/tokens/new
+    to authenticate yourself
+    """))
+    exit -1
+
+token = os.environ["TOKEN"]
+
+# Connect to github
+
+github = Github(token)
+
+# Launch the query
+query = github.search_code(query="SageMath+%display+latex+extension:ipynb")
+
+print("found {} notebooks".format(query.totalCount))
+
+for notebook in query:
+    dirname  = os.path.join(notebook.repository.full_name, os.path.dirname(notebook.path))
+    filename = os.path.join(notebook.repository.full_name, notebook.path)
+    print("downloading notebook to {}".format(filename))
+    os.makedirs(dirname, exist_ok=True)
+    io.open(filename, "w").write(notebook.decoded_content.decode())

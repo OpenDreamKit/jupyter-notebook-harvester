@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+from xml.sax.saxutils import escape
+import io
+import os.path
+import re
+import subprocess
+import json
+import sys
+import tqdm
+
+NAMESPACE = 'xmlns:mws="http://search.mathweb.org/ns" xmlns:m="http://www.w3.org/1998/Math/MathML"'
+REGEX_ANNOTATION = '<annotation-xml encoding="MathML-Content" id="([^"]*)">(.*)</annotation-xml>'
+REGEX_SCRIPT = '<script type="math/tex; mode=display">(.*)</script>'
+
+class NotebookHarvester(object):
+    def __init__(self):
+        self.counter = 0
+
+    def run_latexmlc(self, formula):
+        process = subprocess.Popen("latexmlc --profile=math '-'", shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        out, err = process.communicate(formula.encode('utf-8'))
+        if process.returncode != 0:
+            raise Exception('LaTeXML failed')
+        return out.decode('utf-8')
+
+    def tex_to_mathml(self, formula):
+        """
+            Turns a latexml formula into a <math> element and content mathml (without surrounding element)
+        """
+
+        pmml = self.run_latexmlc(formula)
+        cmml = re.search(REGEX_ANNOTATION, pmml, re.DOTALL).group(2)
+
+        if not cmml:
+            raise Exception("Not valid content mathml")
+
+        return pmml.strip(), cmml.strip()
+
+    def handle_formula(self, formula):
+        try:
+            math, cmml = self.tex_to_mathml(formula['latex'])
+        except Exception as e:
+            print('Failed {}: {}'.format(formula['id'], e))
+            return None
+
+        return {
+            'id': str(formula['id']),
+            'math': escape(math),
+            'cmml': cmml,
+        }
+
+    def handle_parsed(self, notebook):
+
+        # uuid for node
+        uuid = self.counter
+        self.counter += 1
+
+        # url of the notebook
+        url = notebook['url']
+
+        # run over all the formulae
+        formulae = [self.handle_formula(f) for f in notebook['formulae']]
+        formulae = list(filter(lambda f: f is not None, formulae))
+
+        # build the magic html
+        res = '<mws:harvest {}>\n'.format(NAMESPACE)
+        res +=  '  <mws:data mws:data_id="{}">\n'.format(url)
+        res += '    <id>{}</id>\n'.format(url)
+        res += '    <text></text>\n'
+        res += '    <metadata>\n'
+        for f in formulae:
+            res += '      <math local_id="{}">\n{}\n</math>\n'.format(f['id'], f['math'])
+        res += '    </metadata>\n'
+        res += '  </mws:data>\n'
+        for f in formulae:
+            res += '  <mws:expr url="{}" mws:data_id="{}">\n{}\n  </mws:expr>'.format(f['id'], url, f['cmml'])
+        res += '</mws:harvest>'
+        return res
+
+    def extract_formulae(self, html):
+        return [match.group(1) for match in re.finditer(REGEX_SCRIPT, html)]
+
+    def handle_notebook(self, notebook, url):
+        formulae = [ {'id': i, 'latex': formula}
+            for i, c in enumerate( notebook['cells'] ) if c["cell_type"] == "code"
+            for output in c['outputs']          if "data" in output and "text/html" in output["data"]
+            for html in output["data"]["text/html"]
+            for formula in self.extract_formulae(html)
+        ]
+        return {
+            'url': url,
+            'formulae': formulae
+        }
+
+    def __call__(self, path):
+        with open(path) as f:
+            data = json.load(f)
+        spath = path.split("/")
+        url = "https://github.com/{}/{}/blob/master/{}".format(
+            spath[1],
+            spath[2],
+            "/".join(spath[3:]))
+        nb = self.handle_notebook(data, url)
+        return self.handle_parsed(nb)
+
+if __name__ == '__main__':
+    harvester = NotebookHarvester()
+    print(harvester(sys.argv[1]))
