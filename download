@@ -21,7 +21,7 @@ if "TOKEN" not in os.environ:
     where <token> was obtained from https://github.com/settings/tokens/new
     to authenticate yourself
     """))
-    exit -1
+    sys.exit(-1)
 
 token = os.environ["TOKEN"]
 
