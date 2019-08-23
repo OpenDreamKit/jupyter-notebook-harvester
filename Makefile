@@ -5,7 +5,7 @@ NOTEBOOK_INDEXES = $(NOTEBOOKS:%.ipynb=%.harvest.gz)
 
 harvest: $(NOTEBOOK_INDEXES)
 
-$(NOTEBOOK_INDEXES): notebooks/%.harvest.gz: notebooks/%.ipynb
+notebooks/%.harvest.gz: notebooks/%.ipynb
 	cd notebooks; ../harvest $*.ipynb | gzip -9 -c > $*.harvest.gz
 
 download: notebooks

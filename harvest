@@ -9,6 +9,7 @@ import subprocess
 import json
 import sys
 import tqdm
+import urllib.parse
 
 NAMESPACE = 'xmlns:mws="http://search.mathweb.org/ns" xmlns:m="http://www.w3.org/1998/Math/MathML"'
 REGEX_ANNOTATION = '<annotation-xml encoding="MathML-Content" id="([^"]*)">(.*)</annotation-xml>'
@@ -104,7 +105,7 @@ class NotebookHarvester(object):
         url = "https://github.com/{}/{}/blob/master/{}".format(
             spath[1],
             spath[2],
-            "/".join(spath[3:]))
+            urllib.parse.unquote("/".join(spath[3:])))
         nb = self.handle_notebook(data, url)
         return self.handle_parsed(nb)
 

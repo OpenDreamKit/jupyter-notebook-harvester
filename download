@@ -7,6 +7,7 @@ import io
 import os.path
 import sys
 import textwrap
+import urllib
 from github import Github
 
 
@@ -35,8 +36,9 @@ query = github.search_code(query="SageMath+%display+latex+extension:ipynb")
 print("found {} notebooks".format(query.totalCount))
 
 for notebook in query:
-    dirname  = os.path.join(notebook.repository.full_name, os.path.dirname(notebook.path))
-    filename = os.path.join(notebook.repository.full_name, notebook.path)
+    path = urllib.parse.quote(notebook.path)
+    dirname  = os.path.join(notebook.repository.full_name, os.path.dirname(path))
+    filename = os.path.join(notebook.repository.full_name, path)
     print("downloading notebook to {}".format(filename))
     os.makedirs(dirname, exist_ok=True)
     io.open(filename, "w").write(notebook.decoded_content.decode())
