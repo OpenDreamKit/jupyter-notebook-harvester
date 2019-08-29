@@ -73,10 +73,9 @@ class NotebookHarvester(object):
         res +=  '  <mws:data mws:data_id="{}">\n'.format(url)
         res += '    <id>{}</id>\n'.format(url)
         res += '    <text></text>\n'
-        res += '    <metadata>\n'
+        res += '    <metadata />\n'
         for f in formulae:
-            res += '      <math local_id="{}">\n{}\n</math>\n'.format(f['id'], f['math'])
-        res += '    </metadata>\n'
+            res += '    <math local_id="{}">\n{}\n</math>\n'.format(f['id'], f['math'])
         res += '  </mws:data>\n'
         for f in formulae:
             res += '  <mws:expr url="{}" mws:data_id="{}">\n{}\n  </mws:expr>'.format(f['id'], url, f['cmml'])
