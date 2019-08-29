@@ -6,7 +6,7 @@ NOTEBOOK_INDEXES = $(NOTEBOOKS:%.ipynb=%.harvest)
 harvest: $(NOTEBOOK_INDEXES)
 
 notebooks/%.harvest: notebooks/%.ipynb
-	cd notebooks; ../harvest $*.ipynb
+	cd notebooks; ../harvest $*.ipynb > $*.harvest
 
 download: notebooks
 	cd notebooks; ../download
