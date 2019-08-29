@@ -1,12 +1,12 @@
 NOTEBOOKS = $(shell find notebooks -type f -name '*.ipynb')
-NOTEBOOK_INDEXES = $(NOTEBOOKS:%.ipynb=%.harvest.gz)
+NOTEBOOK_INDEXES = $(NOTEBOOKS:%.ipynb=%.harvest)
 
 .PHONY: harvest download
 
 harvest: $(NOTEBOOK_INDEXES)
 
-notebooks/%.harvest.gz: notebooks/%.ipynb
-	cd notebooks; ../harvest $*.ipynb | gzip -9 -c > $*.harvest.gz
+notebooks/%.harvest: notebooks/%.ipynb
+	cd notebooks; ../harvest $*.ipynb
 
 download: notebooks
 	cd notebooks; ../download
